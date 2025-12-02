@@ -1,0 +1,41 @@
+
+esphome:
+  name: esphome-bm2-ble
+  friendly_name: ESPHome BM2 BLE
+  min_version: 2025.5.0
+  name_add_mac_suffix: false
+
+
+external_components:
+  - source: github://andrewbackway/esphome-bm2_ble@main
+
+wifi:
+  ssid: "YOUR_SSID"
+  password: "YOUR_PASS"
+
+logger:
+  level: DEBUG
+
+bm2_ble:
+  mac_address: "XX:XX:XX:XX:XX:XX"
+  update_interval: 10s
+  id: bm2_hub
+
+# Example config using the external component
+sensor:
+  - platform: bm2_ble
+    hub_id: bm2_hub
+    update_interval: 10s
+    name: "BM2 Voltage"
+    id: bm2_voltage
+
+  - platform: bm2_ble
+    hub_id: bm2_hub
+    name: "BM2 Battery Percent"
+    id: bm2_battery_percentage
+
+text_sensor:
+  - platform: bm2_ble
+    hub_id: bm2_hub
+    name: "BM2 Status"
+    id: bm2_status
