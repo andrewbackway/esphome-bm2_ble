@@ -3,9 +3,11 @@ import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome.const import CONF_ID
 from esphome.components import ble_client
+from esphome.core import CORE
 
 AUTO_LOAD = ["sensor", "text_sensor", "binary_sensor"]
 DEPENDENCIES = ["esp32_ble_tracker", "ble_client"]
+CODEOWNERS = ["@andrewbackway"]
 
 bm2_ble_ns = cg.esphome_ns.namespace("bm2_ble")
 BM2BLEComponent = bm2_ble_ns.class_("BM2BLEComponent", cg.Component, ble_client.BLEClientNode)
@@ -61,3 +63,8 @@ async def to_code(config):
     await cg.register_component(var, config)
     ble = await cg.get_variable(config["ble_client_id"])
     cg.add(ble.register_ble_node(var))
+    
+    # Add mbedtls component for ESP-IDF framework
+    if CORE.using_esp_idf:
+        cg.add_define("USE_ESP_IDF")
+        cg.add_library("mbedtls", None)
