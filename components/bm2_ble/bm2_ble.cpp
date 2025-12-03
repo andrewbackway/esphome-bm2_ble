@@ -9,15 +9,13 @@
 namespace esphome {
 namespace bm2_ble {
 
-static const char *TAG = "bm2_ble";
-
 void BM2BLEComponent::setup() {
   ESP_LOGI(TAG, "BM2BLEComponent setup");
 }
 
 void BM2BLEComponent::loop() {
   if (!this->subscribed_ && this->parent_ != nullptr) {
-    if (this->parent_->connected) {
+    if (this->parent_->connected()) {
       this->ensure_subscription();
     }
   }
@@ -32,7 +30,7 @@ void BM2BLEComponent::dump_config() {
 
 void BM2BLEComponent::ensure_subscription() {
   if (this->subscribed_) return;
-  if (this->parent_ == nullptr || !this->parent_->connected) {
+  if (this->parent_ == nullptr || !this->parent_->connected()) {
     ESP_LOGW(TAG, "BLE client not connected");
     return;
   }
