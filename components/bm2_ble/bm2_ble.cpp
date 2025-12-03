@@ -4,7 +4,9 @@
 #include <esp_gattc_api.h>
 #include <vector>
 #include <cstring>
-#include <mbedtls/aes.h>
+
+// Include mbedtls AES the ESP-IDF way (after other includes)
+#include "mbedtls/aes.h"
 
 namespace esphome {
 namespace bm2_ble {
