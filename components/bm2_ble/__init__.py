@@ -63,7 +63,3 @@ async def to_code(config):
     await cg.register_component(var, config)
     ble = await cg.get_variable(config["ble_client_id"])
     cg.add(ble.register_ble_node(var))
-    
-    # Add mbedtls component for ESP-IDF framework
-    if CORE.using_esp_idf:
-        cg.add_library("mbedtls", None)
