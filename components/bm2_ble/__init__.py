@@ -66,5 +66,4 @@ async def to_code(config):
     
     # Add mbedtls component for ESP-IDF framework
     if CORE.using_esp_idf:
-        cg.add_define("USE_ESP_IDF")
         cg.add_library("mbedtls", None)
