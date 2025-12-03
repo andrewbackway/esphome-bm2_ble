@@ -1,0 +1,8 @@
+{
+  "domain": "bm2_ble",
+  "name": "BM2 BLE",
+  "version": "0.4",
+  "requirements": [],
+  "dependencies": [],
+  "codeowners": []
+}
