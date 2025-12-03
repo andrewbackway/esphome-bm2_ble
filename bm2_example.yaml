@@ -34,26 +34,46 @@ esp32_ble_tracker:
 
 ble_client:
   - mac_address: "XX:XX:XX:XX:XX:XX"
-    id: blm2_ble_client
+    id: bm2_ble_client
 
 
 bm2_ble:
-  id: blm2_ble_id
-  ble_client_id: blm2_ble_client
-  update_interval: 10s
+  id: bm2_ble_hub
+  ble_client_id: bm2_ble_client
 
 ota:
 
+# Sensors - numeric values
 sensor:
   - platform: bm2_ble
-    id: bm2_voltage
+    bm2_ble_id: bm2_ble_hub
+    type: voltage
     name: "BM2 Voltage"
+    unit_of_measurement: "V"
+    accuracy_decimals: 2
 
   - platform: bm2_ble
-    id: bm2_battery
+    bm2_ble_id: bm2_ble_hub
+    type: battery
     name: "BM2 Battery Percent"
+    unit_of_measurement: "%"
+    accuracy_decimals: 0
 
+# Text Sensors - string values
 text_sensor:
   - platform: bm2_ble
-    id: bm2_status
+    bm2_ble_id: bm2_ble_hub
+    type: status
     name: "BM2 Status"
+
+# Binary Sensors - on/off values
+binary_sensor:
+  - platform: bm2_ble
+    bm2_ble_id: bm2_ble_hub
+    type: charging
+    name: "BM2 Charging"
+    
+  - platform: bm2_ble
+    bm2_ble_id: bm2_ble_hub
+    type: weak_battery
+    name: "BM2 Weak Battery"

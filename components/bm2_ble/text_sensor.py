@@ -1,22 +1,17 @@
-# custom_components/bm2_ble/text_sensor.py
+# components/bm2_ble/text_sensor.py
 import esphome.codegen as cg
 import esphome.config_validation as cv
-from esphome.const import CONF_ID, CONF_TYPE, CONF_NAME
+from esphome.const import CONF_ID, CONF_TYPE
 from esphome.components import text_sensor as esphome_text_sensor
 
-from . import bm2_ble_ns, BM2BLEComponent, CONF_BM2_BLE_ID
-
-# allowed types/roles for text sensors
-CONF_ROLE = CONF_TYPE
-ROLES = {"status"}
+from . import bm2_ble_ns, BM2BLEComponent, CONF_BM2_BLE_ID, validate_text_sensor_type
 
 BM2BleTextSensor = bm2_ble_ns.class_("BM2BleTextSensor", esphome_text_sensor.TextSensor, cg.PollingComponent)
 
-# Use the 2025.11 text_sensor_schema helper and require the hub id + role/type
 CONFIG_SCHEMA = esphome_text_sensor.text_sensor_schema(BM2BleTextSensor).extend({
     cv.GenerateID(): cv.declare_id(BM2BleTextSensor),
     cv.Required(CONF_BM2_BLE_ID): cv.use_id(BM2BLEComponent),
-    cv.Required(CONF_ROLE): cv.one_of(*sorted(ROLES), lower=True),
+    cv.Required(CONF_TYPE): validate_text_sensor_type,
 }).extend(cv.polling_component_schema('60s'))
 
 
@@ -25,4 +20,4 @@ async def to_code(config):
     await cg.register_component(var, config)
     await esphome_text_sensor.register_text_sensor(var, config)
     parent = await cg.get_variable(config[CONF_BM2_BLE_ID])
-    cg.add(parent.add_entity(config[CONF_ROLE], var))
+    cg.add(parent.add_entity(config[CONF_TYPE], var))

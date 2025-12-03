@@ -1,8 +1,6 @@
 {
-  "domain": "bm2_ble",
-  "name": "BM2 BLE",
-  "version": "0.4",
-  "requirements": [],
-  "dependencies": [],
-  "codeowners": []
+  "name": "bm2_ble",
+  "codeowners": ["@andrewbackway"],
+  "dependencies": ["esp32_ble_tracker", "ble_client"],
+  "iot_class": "local_polling"
 }
