@@ -1,4 +1,3 @@
-// bm2_ble.h
 #pragma once
 #include "esphome.h"
 #include "esphome/components/ble_client/ble_client.h"
@@ -22,6 +21,10 @@ class BM2BLEComponent : public Component {
   void set_voltage_sensor(sensor::Sensor *s) { voltage_sensor_ = s; }
   void set_battery_sensor(sensor::Sensor *s) { battery_sensor_ = s; }
   void set_status_text(text_sensor::TextSensor *t) { status_text_ = t; }
+
+  // new API for attachable entities from platform code
+  void add_entity(const std::string &role, sensor::Sensor *s);
+  void add_entity(const std::string &role, text_sensor::TextSensor *t);
 
   // helper to send encrypted command bytes
   void send_command(const std::vector<uint8_t> &cmd);

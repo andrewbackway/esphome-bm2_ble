@@ -24,6 +24,24 @@ void BM2BLEComponent::loop() {
   (void)now;
 }
 
+void BM2BLEComponent::add_entity(const std::string &role, sensor::Sensor *s) {
+  if (role == "voltage") {
+    this->set_voltage_sensor(s);
+  } else if (role == "battery") {
+    this->set_battery_sensor(s);
+  } else {
+    ESP_LOGW(TAG, "Unknown sensor role '%s' (sensor)", role.c_str());
+  }
+}
+
+void BM2BLEComponent::add_entity(const std::string &role, text_sensor::TextSensor *t) {
+  if (role == "status") {
+    this->set_status_text(t);
+  } else {
+    ESP_LOGW(TAG, "Unknown text_sensor role '%s'", role.c_str());
+  }
+}
+
 void BM2BLEComponent::ensure_subscription() {
   if (this->subscribed_) return;
   if (!this->ble_client_->is_connected()) {

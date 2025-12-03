@@ -1,34 +1,37 @@
-# sensor.py (ESPhome 2025.11-only)
+# custom_components/bm2_ble/sensor.py
 import esphome.codegen as cg
 import esphome.config_validation as cv
-from esphome.components import sensor as sensor_component
-from esphome.const import CONF_NAME, CONF_ID
-
-from . import bm2_ble_ns, BM2BLEComponent
+from esphome.components import sensor as esphome_sensor
+from esphome.const import (
+    CONF_ID,
+    CONF_NAME,
+    CONF_UNIT_OF_MEASUREMENT,
+    CONF_ACCURACY_DECIMALS,
+)
+from . import bm2_ble_ns, BM2BLEComponent, CONF_BM2_BLE_ID
 
 CONF_ROLE = "role"
 ROLES = {"voltage", "battery"}
 
-# Use the new 2025.11 sensor schema helper (no fallback)
-PLATFORM_SCHEMA = sensor_component.sensor_schema(
-    BM2BLEComponent,
+# create a platform sensor class: sensor + pollingcomponent as in the example pattern
+BM2BleSensor = bm2_ble_ns.class_("BM2BleSensor", esphome_sensor.Sensor, cg.PollingComponent)
+
+# use the 2025.11 sensor_schema helper to get all standard options
+CONFIG_SCHEMA = esphome_sensor.sensor_schema(
+    unit_of_measurement=CONF_UNIT_OF_MEASUREMENT, accuracy_decimals=1
+).extend(
     {
-        cv.Required(CONF_ID): cv.use_id(BM2BLEComponent),
-        cv.Optional(CONF_NAME): cv.string,
-        cv.Optional(CONF_ROLE, default="voltage"): cv.one_of(*sorted(ROLES), upper=False),
-    },
-)
+        cv.GenerateID(): cv.declare_id(BM2BleSensor),
+        cv.Required(CONF_BM2_BLE_ID): cv.use_id(BM2BLEComponent),
+        cv.Required(CONF_ROLE): cv.one_of(*sorted(ROLES), lower=True),
+    }
+).extend(cv.polling_component_schema("60s"))
 
 
-def to_code(config):
-    hub = cg.get_variable(config[CONF_ID])
-    sens = sensor_component.new_sensor(config)
-
-    # map role to the correct setter
-    role = config.get(CONF_ROLE, "voltage")
-    if role == "voltage":
-        cg.add(hub.set_voltage_sensor(sens))
-    else:
-        cg.add(hub.set_battery_sensor(sens))
-
-    cg.add(sens)
+async def to_code(config):
+    var = cg.new_Pvariable(config[CONF_ID])
+    await cg.register_component(var, config)
+    await esphome_sensor.register_sensor(var, config)
+    parent = await cg.get_variable(config[CONF_BM2_BLE_ID])
+    # call parent's add_entity(role, var)
+    cg.add(parent.add_entity(config[CONF_ROLE], var))
