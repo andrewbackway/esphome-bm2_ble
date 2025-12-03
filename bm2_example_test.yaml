@@ -1,11 +1,15 @@
+### Copilot/Developer Notes
+### This test YAML uses `lolin_s3_pro` with ESP-IDF and requires esphome 2025.11 or newer.
+### This YAML is used for local testing and doesn't include OTA or remote `external_components`.
 esphome:
   name: esphome-bm2-ble
   friendly_name: ESPHome BM2 BLE
-  min_version: 2025.5.0
+  # Use at least ESPhome version 2025.11.0 to ensure compatibility with the esp-idf
+  min_version: 2025.11.0
   name_add_mac_suffix: false
 
 esp32:
-  board: esp32-s3-devkitc-1
+  board: lolin_s3_pro
   framework:
     type: esp-idf
 ## external_components removed for local testing

@@ -1,12 +1,22 @@
+# Copilot/Developer Notes:
+# - This example targets a Lolin S3 Pro (ESP32-S3) board using the ESP-IDF framework.
+# - Set `min_version: 2025.11.0` to ensure features/compatibility.
+# - Use `esphome run bm2_example.yaml --device COMn` (Windows) or `esphome run bm2_example.yaml --device /dev/ttyUSBn` (Linux/macOS) to build & flash.
+# - For development, see `bm2_example_test.yaml` for a reduced, local test example.
+
 
 esphome:
+  # Required ESPhome minimum version for compatibility
   name: esphome-bm2-ble
   friendly_name: ESPHome BM2 BLE
-  min_version: 2025.5.0
+  # This project is built for ESPhome 2025.11 (or newer) and uses the ESP-IDF framework
+  min_version: 2025.11.0
   name_add_mac_suffix: false
 
 esp32:
-  board: esp32-s3-devkitc-1
+  # Use the Lolin S3 Pro board (ESP32-S3) with the ESP-IDF framework
+  # If you are using a different board, update this field accordingly.
+  board: lolin_s3_pro
   framework:
     type: esp-idf
     
