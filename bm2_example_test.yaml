@@ -1,4 +1,3 @@
-
 esphome:
   name: esphome-bm2-ble
   friendly_name: ESPHome BM2 BLE
@@ -9,9 +8,7 @@ esp32:
   board: esp32-s3-devkitc-1
   framework:
     type: esp-idf
-    
-external_components:
-  - source: github://andrewbackway/esphome-bm2_ble@main
+## external_components removed for local testing
 
 wifi:
   ssid: "YOUR_SSID"
@@ -23,27 +20,31 @@ logger:
 esp32_ble_tracker:
 
 ble_client:
-  - mac_address: "XX:XX:XX:XX:XX:XX"
+  - mac_address: "00:00:00:00:00:00"
     id: blm2_ble_client
-
 
 bm2_ble:
   id: blm2_ble_id
   ble_client_id: blm2_ble_client
   update_interval: 10s
 
-ota:
-
+## ota removed for test validation
 sensor:
   - platform: bm2_ble
     id: bm2_voltage
     name: "BM2 Voltage"
+    role: voltage
+    bm2_ble_id: blm2_ble_id
 
   - platform: bm2_ble
     id: bm2_battery
     name: "BM2 Battery Percent"
+    role: battery
+    bm2_ble_id: blm2_ble_id
 
 text_sensor:
   - platform: bm2_ble
     id: bm2_status
     name: "BM2 Status"
+    type: status
+    bm2_ble_id: blm2_ble_id

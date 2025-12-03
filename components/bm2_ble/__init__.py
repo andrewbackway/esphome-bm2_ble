@@ -1,7 +1,7 @@
 # custom_components/bm2_ble/__init__.py
 import esphome.codegen as cg
 import esphome.config_validation as cv
-from esphome.const import CONF_UPDATE_INTERVAL
+from esphome.const import CONF_UPDATE_INTERVAL, CONF_ID
 from esphome.components import ble_client
 
 AUTO_LOAD = True
@@ -22,9 +22,11 @@ CONFIG_SCHEMA = cv.Schema(
 )
 
 
-def to_code(config):
-    var = cg.new_Pvariable(config[cv.GenerateID()])
-    ble = cg.get_variable(config["ble_client_id"])
+async def to_code(config):
+    var = cg.new_Pvariable(config[CONF_ID])
+    await cg.register_component(var, config)
+    ble = await cg.get_variable(config["ble_client_id"])
     cg.add(var.set_ble_client(ble))
     cg.add(var.set_update_interval(config.get(CONF_UPDATE_INTERVAL)))
-    cg.add(var)
+    # registering the component is enough; there's no need to add the var by itself
+    # return the var implicitly for further use
