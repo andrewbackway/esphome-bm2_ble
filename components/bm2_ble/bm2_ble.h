@@ -5,7 +5,10 @@
 #include "esphome/components/sensor/sensor.h"
 #include "esphome/components/binary_sensor/binary_sensor.h"
 #include "esphome/components/text_sensor/text_sensor.h"
-#include <mbedtls/aes.h>
+
+#define MBEDTLS_AES_ALT
+#include <aes_alt.h>
+
 #include <map>
 #include <string>
 #include <vector>
