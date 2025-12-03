@@ -1,6 +1,7 @@
 // bm2_ble.cpp
 #include "bm2_ble.h"
 #include "esphome.h"
+#include <esp_gattc_api.h>
 #include <vector>
 #include <cstring>
 #include <mbedtls/aes.h>
@@ -12,12 +13,16 @@ static const char *TAG = "bm2_ble";
 
 void BM2BLEComponent::setup() {
   ESP_LOGI(TAG, "BM2BLEComponent setup");
+  // Register this component as a BLE node so we get GATTC events
+  if (this->ble_client_ != nullptr) {
+    this->ble_client_->register_ble_node(this);
+  }
 }
 
 void BM2BLEComponent::loop() {
   uint32_t now = millis();
   if (!this->subscribed_ && this->ble_client_ != nullptr) {
-    if (this->ble_client_->is_connected()) {
+    if (this->ble_client_->connected()) {
       this->ensure_subscription();
     }
   }
@@ -44,31 +49,50 @@ void BM2BLEComponent::add_entity(const std::string &role, text_sensor::TextSenso
 
 void BM2BLEComponent::ensure_subscription() {
   if (this->subscribed_) return;
-  if (!this->ble_client_->is_connected()) {
+  if (!this->ble_client_->connected()) {
     ESP_LOGW(TAG, "BLE client not connected");
     return;
   }
 
-  // locate characteristics by UUID
-  auto notify_char = this->ble_client_->get_characteristic_by_uuid("0000fff4-0000-1000-8000-00805f9b34fb");
-  auto write_char  = this->ble_client_->get_characteristic_by_uuid("0000fff3-0000-1000-8000-00805f9b34fb");
+  // The BM2 device uses service 0xFFF0 with characteristics FFF3 (write) and FFF4 (notify).
+  auto svc = this->ble_client_->get_service(0xfff0);
+  if (svc == nullptr) {
+    ESP_LOGW(TAG, "Service 0xfff0 not found");
+    return;
+  }
+  auto notify_char = svc->get_characteristic(0xfff4);
+  auto write_char = svc->get_characteristic(0xfff3);
 
   if (notify_char == nullptr) {
     ESP_LOGW(TAG, "Notify characteristic not found");
     return;
   }
 
-  // register callback (signature: void(const std::vector<uint8_t> &data))
-  this->ble_client_->add_on_notify_callback(notify_char->get_handle(), [this](const std::vector<uint8_t> &data) {
-    this->decrypt_and_handle(data);
-  });
+  // store handle for comparing in gattc event handler
+  this->notify_handle_ = notify_char->handle;
+  this->write_handle_ = write_char ? write_char->handle : 0;
+
+  // Request notification registration from the BLE stack. BLEClientBase will handle
+  // the result in its gattc_event_handler, but we still need to register here.
+  esp_err_t err = esp_ble_gattc_register_for_notify(this->ble_client_->get_gattc_if(),
+                                                   this->ble_client_->get_remote_bda(),
+                                                   this->notify_handle_);
+  if (err != ESP_OK) {
+    ESP_LOGW(TAG, "esp_ble_gattc_register_for_notify failed: %d", err);
+    // Do not return here - we may still get notifications depending on device
+  }
 
   this->subscribed_ = true;
   ESP_LOGI(TAG, "Subscribed to notifications");
 }
 
 void BM2BLEComponent::send_command(const std::vector<uint8_t> &cmd) {
-  auto write_char = this->ble_client_->get_characteristic_by_uuid("0000fff3-0000-1000-8000-00805f9b34fb");
+  auto svc = this->ble_client_->get_service(0xfff0);
+  if (svc == nullptr) {
+    ESP_LOGW(TAG, "Service 0xfff0 not found for send_command");
+    return;
+  }
+  auto write_char = svc->get_characteristic(0xfff3);
   if (write_char == nullptr) {
     ESP_LOGW(TAG, "Write characteristic not found");
     return;
@@ -141,15 +165,28 @@ void BM2BLEComponent::handle_voltage_hex(const std::string &hex) {
   }
 
   if (hex.size() >= 16) {
-    try {
-      auto sub = [&](size_t a, size_t b) -> int {
-        std::string s = hex.substr(a, b - a);
-        return std::stoi(s, nullptr, 16);
-      };
+    auto parse_hex_substring = [&](size_t pos, size_t len, int &out) -> bool {
+      if (pos + len > hex.size()) return false;
+      out = 0;
+      for (size_t i = pos; i < pos + len; ++i) {
+        char c = hex[i];
+        int val = 0;
+        if (c >= '0' && c <= '9') val = c - '0';
+        else if (c >= 'a' && c <= 'f') val = c - 'a' + 10;
+        else if (c >= 'A' && c <= 'F') val = c - 'A' + 10;
+        else return false;
+        out = (out << 4) + val;
+      }
+      return true;
+    };
 
-      int voltage_raw = sub(2, 5);  // 3 hex digits
-      int status_raw = sub(5, 6);   // 1 hex digit
-      int battery_raw = sub(6, 8);  // 2 hex digits
+    int voltage_raw = 0;
+    int status_raw = 0;
+    int battery_raw = 0;
+    if (!parse_hex_substring(2, 3, voltage_raw) || !parse_hex_substring(5, 1, status_raw) || !parse_hex_substring(6, 2, battery_raw)) {
+      ESP_LOGW(TAG, "Failed parsing hex payload");
+      return;
+    }
 
       float volts = voltage_raw / 100.0f;
       int battery_pct = battery_raw;
@@ -177,6 +214,19 @@ void BM2BLEComponent::handle_voltage_hex(const std::string &hex) {
   } else {
     ESP_LOGW(TAG, "Hex too short to parse: len=%d", (int)hex.size());
   }
+}
+
+bool BM2BLEComponent::gattc_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t gattc_if,
+                                         esp_ble_gattc_cb_param_t *param) {
+  // We only care about notification events here
+  if (event == ESP_GATTC_NOTIFY_EVT) {
+    if (param->notify.handle == this->notify_handle_) {
+      std::vector<uint8_t> data(param->notify.value, param->notify.value + param->notify.value_len);
+      this->decrypt_and_handle(data);
+      return true;
+    }
+  }
+  return false;
 }
 
 }  // namespace bm2_ble

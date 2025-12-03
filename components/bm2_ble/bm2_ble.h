@@ -6,7 +6,7 @@
 namespace esphome {
 namespace bm2_ble {
 
-class BM2BLEComponent : public Component {
+class BM2BLEComponent : public Component, public ble_client::BLEClientNode {
  public:
   BM2BLEComponent() {}
 
@@ -14,7 +14,12 @@ class BM2BLEComponent : public Component {
   void loop() override;
 
   // python codegen sets these
-  void set_ble_client(ble_client::BLEClient *client) { ble_client_ = client; }
+  void set_ble_client(ble_client::BLEClient *client) { 
+    ble_client_ = client;
+    if (ble_client_ != nullptr) {
+      ble_client_->register_ble_node(this);
+    }
+  }
   void set_update_interval(uint32_t sec) { update_interval_ = sec * 1000U; }
 
   // sensor setters called from codegen
@@ -46,7 +51,13 @@ class BM2BLEComponent : public Component {
 
   void ensure_subscription();
 
+  // override event handler to capture BLE notifications
+  bool gattc_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t gattc_if,
+                           esp_ble_gattc_cb_param_t *param) override;
+
   bool subscribed_{false};
+  uint16_t notify_handle_{0};
+  uint16_t write_handle_{0};
 };
 }  // namespace bm2_ble
 }  // namespace esphome
