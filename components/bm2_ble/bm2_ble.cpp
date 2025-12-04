@@ -140,13 +140,13 @@ void BM2BLEComponent::update_entities(float voltage, int status, int battery) {
     it->second->publish_state((float)battery);
   }
   if (auto it = this->text_sensors_.find("status"); it != this->text_sensors_.end()) {
-    std::string label = "unknown";
+    std::string label = "Unknown";
     switch (status) {
-      case 0: label = "normal"; break;
-      case 1: label = "weak"; break;
-      case 2: label = "very weak"; break;
-      case 4: label = "charging"; break;
-      default: label = "unknown"; break;
+      case 0: label = "Normal"; break;
+      case 1: label = "Weak"; break;
+      case 2: label = "Very Weak"; break;
+      case 4: label = "Charging"; break;
+      default: label = "Unknown"; break;
     }
     it->second->publish_state(label);
   }
@@ -162,6 +162,7 @@ void BM2BLEComponent::gattc_event_handler(esp_gattc_cb_event_t event, esp_gatt_i
                                          esp_ble_gattc_cb_param_t *param) {
   if (event == ESP_GATTC_NOTIFY_EVT) {
     if (param->notify.handle == this->notify_handle_) {
+      
       std::vector<uint8_t> data(param->notify.value, param->notify.value + param->notify.value_len);
       this->decrypt_and_handle(data);
     }
