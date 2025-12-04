@@ -4,6 +4,7 @@
 #include <vector>
 #include <cstring>
 
+// DIRECT INCLUDE for ESP-IDF v5+
 #include <aes/esp_aes.h>
 
 namespace esphome {
@@ -31,10 +32,9 @@ void BM2BLEComponent::dump_config() {
 void BM2BLEComponent::ensure_subscription() {
   if (this->subscribed_) return;
   if (this->parent_ == nullptr || !this->parent_->connected()) {
-    return; // Wait for connection
+    return;
   }
 
-  // The BM2 device uses service 0xFFF0
   auto svc = this->parent_->get_service(0xfff0);
   if (svc == nullptr) {
     ESP_LOGW(TAG, "Service 0xfff0 not found");
@@ -65,27 +65,23 @@ void BM2BLEComponent::ensure_subscription() {
 void BM2BLEComponent::decrypt_and_handle(const std::vector<uint8_t> &data) {
   std::vector<uint8_t> in(data.begin(), data.end());
   
-  // Pad to 16 bytes
+  // Pad input to 16 bytes (AES requirement)
   size_t pad = (16 - (in.size() % 16)) % 16;
   if (pad) in.insert(in.end(), pad, 0);
 
   if (in.size() == 0) return;
 
-  // --- ESP-IDF SPECIFIC IMPLEMENTATION ---
   std::vector<uint8_t> out(in.size(), 0);
-  uint8_t iv[16] = {0}; // Zero IV
+  uint8_t iv[16] = {0};
 
   esp_aes_context ctx;
   esp_aes_init(&ctx);
-  // AES_KEY is defined in bm2_ble.h
   esp_aes_setkey(&ctx, AES_KEY, 128);
-  
-  // Perform decryption
   esp_aes_crypt_cbc(&ctx, ESP_AES_DECRYPT, in.size(), iv, in.data(), out.data());
   esp_aes_free(&ctx);
-  // ---------------------------------------
 
-  // Convert to hex string and strip trailing 00 bytes
+  // Convert to hex string
+  // FIX: DO NOT STRIP TRAILING ZEROS! They are valid data (TimeC).
   std::string hex;
   hex.reserve(out.size() * 2);
   for (size_t i = 0; i < out.size(); ++i) {
@@ -93,21 +89,16 @@ void BM2BLEComponent::decrypt_and_handle(const std::vector<uint8_t> &data) {
     sprintf(buf, "%02x", out[i]);
     hex += buf;
   }
-  while (hex.size() >= 2 && hex.substr(hex.size() - 2) == "00")
-    hex.erase(hex.size() - 2);
 
   ESP_LOGD(TAG, "Decrypted HEX: %s", hex.c_str());
   this->parse_voltage_message(hex);
 }
 
-// ... The rest of the file (parse_voltage_message, update_entities, gattc_event_handler) 
-// ... can remain exactly as it was in the original file. 
-
 void BM2BLEComponent::parse_voltage_message(const std::string &hex) {
-  // (Keep original implementation)
   if (hex.rfind("fefefe", 0) == 0) return;
   if (hex.find("fffefe") != std::string::npos) return;
 
+  // We expect at least 16 chars (8 bytes) for a valid voltage message
   if (hex.size() >= 16) {
     auto parse_hex_substring = [&](size_t pos, size_t len, int &out) -> bool {
       if (pos + len > hex.size()) return false;
@@ -128,6 +119,7 @@ void BM2BLEComponent::parse_voltage_message(const std::string &hex) {
     int status_raw = 0;
     int battery_raw = 0;
     
+    // Hex format: [00-01] Header, [02-04] Voltage×100, [05] Status, [06-07] Battery
     if (!parse_hex_substring(2, 3, voltage_raw) || 
         !parse_hex_substring(5, 1, status_raw) || 
         !parse_hex_substring(6, 2, battery_raw)) {
@@ -141,7 +133,6 @@ void BM2BLEComponent::parse_voltage_message(const std::string &hex) {
 }
 
 void BM2BLEComponent::update_entities(float voltage, int status, int battery) {
-  // (Keep original implementation)
   if (auto it = this->sensors_.find("voltage"); it != this->sensors_.end()) {
     it->second->publish_state(voltage);
   }
