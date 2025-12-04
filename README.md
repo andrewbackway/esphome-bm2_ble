@@ -83,7 +83,7 @@ sensor:
   - platform: bm2_ble
     bm2_ble_id: bm2_ble_hub
     type: battery
-    name: "BM2 Battery"
+    name: "BM2 Battery Percent"
     unit_of_measurement: "%"
     accuracy_decimals: 0
 
@@ -98,11 +98,12 @@ binary_sensor:
     bm2_ble_id: bm2_ble_hub
     type: charging
     name: "BM2 Charging"
-    
+
   - platform: bm2_ble
     bm2_ble_id: bm2_ble_hub
     type: weak_battery
     name: "BM2 Weak Battery"
+
 ```
 
 ## Protocol Details
