@@ -162,6 +162,11 @@ void BM2BLEComponent::gattc_event_handler(esp_gattc_cb_event_t event, esp_gatt_i
                                          esp_ble_gattc_cb_param_t *param) {
   if (event == ESP_GATTC_NOTIFY_EVT) {
     if (param->notify.handle == this->notify_handle_) {
+      uint32_t now = millis();
+      if (now - this->last_update_ < 15000) {
+        return; // Ignore this update
+      }
+      this->last_update_ = now;
       
       std::vector<uint8_t> data(param->notify.value, param->notify.value + param->notify.value_len);
       this->decrypt_and_handle(data);

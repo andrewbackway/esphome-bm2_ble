@@ -55,7 +55,8 @@ class BM2BLEComponent : public Component, public ble_client::BLEClientNode {
   bool subscribed_{false};
   uint16_t notify_handle_{0};
   uint16_t write_handle_{0};
-  
+
+  uint32_t last_update_{0};
 
   // Entity maps (type-based)
   std::map<std::string, sensor::Sensor *> sensors_;
