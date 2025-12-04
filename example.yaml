@@ -34,9 +34,7 @@ ble_client:
 
 bm2_ble:
   id: bm2_ble_hub
-  ble_client_id: bm2_ble_client
-
-ota:
+  ble_client_id: blm2_ble_client
 
 # Sensors - numeric values
 sensor:
@@ -67,7 +65,7 @@ binary_sensor:
     bm2_ble_id: bm2_ble_hub
     type: charging
     name: "BM2 Charging"
-    
+
   - platform: bm2_ble
     bm2_ble_id: bm2_ble_hub
     type: weak_battery
