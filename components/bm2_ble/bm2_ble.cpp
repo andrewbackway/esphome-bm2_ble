@@ -4,8 +4,7 @@
 #include <vector>
 #include <cstring>
 
-// DIRECT INCLUDE for ESP-IDF Hardware AES
-#include "esp_aes.h" 
+#include <aes/esp_aes.h>
 
 namespace esphome {
 namespace bm2_ble {
