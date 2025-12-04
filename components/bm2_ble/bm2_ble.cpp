@@ -5,12 +5,7 @@
 #include <vector>
 #include <cstring>
 
-// Use ESP32 hardware-accelerated AES
-#ifdef USE_ESP_IDF
 #include "esp_aes.h"
-#else
-#include "mbedtls/aes.h"
-#endif
 
 namespace esphome {
 namespace bm2_ble {
@@ -76,22 +71,11 @@ void BM2BLEComponent::decrypt_and_handle(const std::vector<uint8_t> &data) {
   size_t pad = (16 - (in.size() % 16)) % 16;
   if (pad) in.insert(in.end(), pad, 0);
 
-#ifdef USE_ESP_IDF
   // Use ESP32 hardware-accelerated AES
   esp_aes_context ctx;
   esp_aes_init(&ctx);
   esp_aes_setkey(&ctx, AES_KEY, 128);
-#else
-  mbedtls_aes_context ctx;
-  mbedtls_aes_init(&ctx);
-  if (mbedtls_aes_setkey_dec(&ctx, AES_KEY, 128) != 0) {
-    ESP_LOGE(TAG, "AES setkey_dec failed");
-    mbedtls_aes_free(&ctx);
-    return;
-  }
-#endif
 
-#ifdef USE_ESP_IDF
   if (in.size() == 0) {
     esp_aes_free(&ctx);
     return;
@@ -102,16 +86,6 @@ void BM2BLEComponent::decrypt_and_handle(const std::vector<uint8_t> &data) {
   
   esp_aes_crypt_cbc(&ctx, ESP_AES_DECRYPT, in.size(), iv, in.data(), out.data());
   esp_aes_free(&ctx);
-#else
-  std::vector<uint8_t> out(in.size(), 0);
-  uint8_t iv[16] = {0};
-  int rc = mbedtls_aes_crypt_cbc(&ctx, MBEDTLS_AES_DECRYPT, in.size(), iv, in.data(), out.data());
-  mbedtls_aes_free(&ctx);
-  if (rc != 0) {
-    ESP_LOGE(TAG, "AES decrypt failed: %d", rc);
-    return;
-  }
-#endif
 
   // convert to hex string and strip trailing 00 bytes
   std::string hex;
