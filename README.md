@@ -118,7 +118,7 @@ For detailed protocol information, see [protocol.md](protocol.md).
 
 ## Architecture
 
-This component follows the architecture pattern from [esphome-dometic_cfx_ble](https://github.com/andrewbackway/esphome-dometic_cfx_ble):
+This component follows the architecture platform sensor approach:
 
 - **Type-based entity registration** - Sensors register with the hub component using `type` field
 - **Dynamic entity maps** - Hub maintains maps of sensors by type for flexible updates
